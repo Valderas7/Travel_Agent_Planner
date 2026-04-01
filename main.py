@@ -2,7 +2,7 @@
 from api.routes import router
 from core.logging import setup_logging
 from fastapi import FastAPI
-from mcp_flight_server import mcp_app
+from servers.mcp_flight_server import mcp_app
 
 # Inicia el logger
 logger = setup_logging()

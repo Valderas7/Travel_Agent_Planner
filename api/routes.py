@@ -8,6 +8,6 @@ router = APIRouter()
 
 
 # Se crea un endpoint en 'POST' 
-@router.post("/flights")
+@router.post("/flights", tags=['Vuelos'])
 async def search_flights_endpoint(state: TravelState):
     return await flight_agent(state)

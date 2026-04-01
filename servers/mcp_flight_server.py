@@ -120,9 +120,10 @@ async def mcp_search_flights(
     flights = []
 
     # Dentro de la lista de mejores vuelos de los resultados de SerpAPI...
-    for flight_group in data.get("best_flights", []):
+    for group, flight_group in enumerate(data.get("best_flights", [])):
 
-        # Se obtienen los vuelos dentro de cada grupo de mejores vuelos
+        # Se obtienen los vuelos de ida y vuelta dentro de cada grupo de
+        # mejores vuelos
         legs = flight_group.get("flights", [])
 
         # Si no hay vuelos se continua
@@ -134,6 +135,7 @@ async def mcp_search_flights(
 
         # Si el precio es superior a nuestro presupuesto, se continúa
         if price > budget:
+            logger.info(f"Grupo {group+1} descartado por precio.")
             continue
 
         # Se toma el primer 'leg' como la ida y el segundo como la vuelta
@@ -173,6 +175,7 @@ async def mcp_search_flights(
 
     # Se devuelve un máximo de 5 opciones de vuelo
     return FlightSearchResult(flights=flights[:5])
+
 
 # Se configura el MCP para operar en modo HTTP sin estado en la raíz
 mcp_app = mcp.http_app(path='/', stateless_http=True)
