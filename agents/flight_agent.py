@@ -1,18 +1,14 @@
 # Librerías
+import logging
+from core.llm import llm
+from langchain_core.messages import HumanMessage
 from langchain_mcp_adapters.tools import load_mcp_tools
-from langchain_openai import ChatOpenAI
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from prompts.flight_prompts import FlightPrompts
 from state import TravelState
 
-# Se instancia el modelo de lenguaje local de LM Studio
-llm = ChatOpenAI(
-    base_url="http://localhost:1234/v1",
-    api_key="lm-studio",
-    model="nvidia/nemotron-3-nano-4b",
-    temperature=0,
-)
-
-# URL del servidor MCP local
-MCP_URL = "http://localhost:8000"
+# Se obtiene el logger para este módulo
+logger = logging.getLogger(__name__)
 
 
 async def flight_agent(state: TravelState) -> TravelState:
@@ -27,28 +23,75 @@ async def flight_agent(state: TravelState) -> TravelState:
         TravelState: El estado actualizado con las opciones de vuelos
         encontradas
     """
-    # Se cargan las herramientas disponibles en el servidor MCP
-    tools = await load_mcp_tools(MCP_URL)
+    # Lista vacía para almacenar vuelos
+    flights = []
 
-    # Se obtiene la herramienta de búsqueda de vuelos por su nombre
-    tool = next(t for t in tools if t.name == "search_flights")
+    # Se intenta...
+    try:
+        # Se crea un cliente con conexiones a servidores MCP
+        mcp_client = MultiServerMCPClient({
+            "flight-search": {
+                "transport": "streamable_http",
+                "url": "http://localhost:8001/mcp"
+            }
+        })
 
-    # Se invoca la herramienta MCP de búsqueda de vuelos con los
-    # parámetros del estado del viaje
-    result = await tool.ainvoke({
-        "origin": state["origin"],
-        "destination": state["destination"],
-        "outbound_date": state["outbound_date"],
-        "return_date": state.get("return_date"),
-        "budget": state["budget"],
-    })
+        # El cliente se conecta al servidor MCP e inicializa una sesión
+        async with mcp_client.session("flight-search") as session:
+            await session.initialize()
 
-    # Se devuelve el estado del viaje actualizado con las opciones de
-    # vuelos, convirtiendo cada opción a un diccionario
-    return {
-        **state,
-        "flights": [
-            flight.model_dump()
-            for flight in result.flights
-        ]
-    }
+            # Se cargan las herramientas disponibles en el servidor MCP
+            tools = await load_mcp_tools(session)
+            logger.info(
+                f"Herramientas cargadas correctamente. Total: {len(tools)}"
+            )
+
+            # Se obtiene la herramienta de búsqueda de vuelos por su nombre
+            llm_with_tools = llm.bind_tools(tools, tool_choice="auto")
+
+            # Se construye el prompt de vuelos
+            user_prompt = FlightPrompts.search_flights(state)
+
+            # Se invoca al modelo de lenguaje
+            response = await llm_with_tools.ainvoke([
+                HumanMessage(content=user_prompt)
+            ])
+            logger.info("Modelo invocado correctamente.")
+
+            # Si la respuesta tiene el atributo tool_calls...
+            if getattr(response, "tool_calls", None):
+
+                # Para cada herramienta de la respuesta del modelo...
+                for tool_call in response.tool_calls:
+                    
+                    # Se almacena el nombre de la herramienta
+                    tool = next(t for t in tools if t.name == tool_call["name"])
+
+                    # Se invoca a la herramienta
+                    result = await tool.ainvoke(tool_call["args"])
+
+                    # Se extiende la lista con los vuelos encontrados en forma
+                    # de diccionario
+                    flights.extend([
+                        flight.model_dump()
+                        for flight in result.flights
+                    ])
+
+            # Se devuelve el estado con las opciones de vuelo
+            return {
+                **state,
+                "flights": flights
+            }
+        
+    # Excepción
+    except Exception:
+        logger.exception(
+            "Error durante la ejecución del agente de búsqueda de vuelos."
+        )
+
+    # Finalmente...
+    finally:
+        logger.info(
+            "Búsqueda de vuelos finalizada. Total de vuelos "
+            f"encontrados: {len(flights)}"
+        )

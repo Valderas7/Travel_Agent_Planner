@@ -1,5 +1,5 @@
 # Librerías
-from typing import TypedDict, List, Optional, Dict, Any
+from typing_extensions import TypedDict, List, Optional, Dict, Any
 
 
 class TravelState(TypedDict):
@@ -24,7 +24,4 @@ class TravelState(TypedDict):
     destination: str               
     outbound_date: str             
     return_date: Optional[str]     
-    budget: float                  
-    adults: int                    
-    flights: Optional[List[Dict[str, Any]]]
-    hotels: Optional[List[Dict[str, Any]]]
+    budget: float

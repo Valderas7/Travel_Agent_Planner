@@ -1,10 +1,14 @@
 # Librerías
+import logging
 import os
 import httpx
 from contextlib import asynccontextmanager
 from fastmcp import Context, FastMCP
 from models.flight_models import FlightOption, FlightSearchResult
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, Dict, Optional
+
+# Se obtiene el logger para este módulo
+logger = logging.getLogger(__name__)
 
 
 # Se crea una función de contexto para manejar el ciclo de vida del servidor
@@ -55,14 +59,14 @@ mcp = FastMCP("flight-search", lifespan=lifespan)
         "budget": "Presupuesto máximo por persona"
     }
 )
-async def search_flights(
+async def mcp_search_flights(
     ctx: Context,
     origin: str,
     destination: str,
     outbound_date: str,
     return_date: Optional[str] = None,
     budget: float = 1000,
-) -> FlightSearchResult:
+) -> Dict[str, dict]:
     """
     Busca vuelos reales con precios usando Google Flights a través de SerpAPI.
     Filtra por presupuesto.
@@ -108,14 +112,14 @@ async def search_flights(
         data = response.json()
 
     # En caso de excepción se devuelve lista vacía
-    except Exception as e:
+    except Exception:
         return FlightSearchResult(flights=[])
 
     # Lista vacía para almacenar las opciones de vuelo
     flights = []
 
     # Dentro de la lista de mejores vuelos de los resultados de SerpAPI...
-    for flight_group in data.get("best_flights", []) + data.get("flights", []):
+    for flight_group in data.get("best_flights", []):
         
         # Para cada vuelo dentro del grupo de mejores vuelos...
         for leg in flight_group.get("flights", []):
@@ -134,7 +138,11 @@ async def search_flights(
                 ))
 
     # Se devuelve un máximo de 10 opciones de vuelo
-    return FlightSearchResult(flights=flights[:10])
+    return {"flights": [flight.model_dump() for flight in flights[:10]]}
 
 # Se configura el MCP para operar en modo HTTP sin estado
 app = mcp.http_app(stateless_http=True)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("mcp_flight_server:app", host="127.0.0.1", port=8001, reload=True)
