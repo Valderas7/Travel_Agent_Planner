@@ -6,14 +6,19 @@ from typing import List
 class FlightOption(BaseModel):
     """
     Clase que representa una opción de vuelo, incluyendo detalles como
-    aerolínea, precio, horarios de salida y regreso, y si es directo o
-    con escalas."""
-    airline: str
-    price: float
-    departure_time: str
-    return_time: str
-    direct: bool
-
+    precio, aerolíneas, horas de despegue y llegada en la ida y la vuelta
+    y números de vuelo."""
+    price: str
+    outbound_airport: str
+    outbound_airline: str
+    outbound_departure_time: str
+    outbound_arrival_time: str
+    outbound_flight_number: str
+    return_airport: str
+    return_airline: str
+    return_departure_time: str
+    return_arrival_time: str
+    return_flight_number: str
 
 class FlightSearchResult(BaseModel):
     """

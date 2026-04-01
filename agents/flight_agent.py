@@ -1,5 +1,6 @@
 # Librerías
 import logging
+import json
 from core.llm import llm
 from langchain_core.messages import HumanMessage
 from langchain_mcp_adapters.tools import load_mcp_tools
@@ -28,11 +29,12 @@ async def flight_agent(state: TravelState) -> TravelState:
 
     # Se intenta...
     try:
-        # Se crea un cliente con conexiones a servidores MCP
+
+        # Se crea un cliente con conexión al servidor MCP
         mcp_client = MultiServerMCPClient({
             "flight-search": {
                 "transport": "streamable_http",
-                "url": "http://localhost:8001/mcp"
+                "url": "http://localhost:8000/mcp"
             }
         })
 
@@ -46,17 +48,21 @@ async def flight_agent(state: TravelState) -> TravelState:
                 f"Herramientas cargadas correctamente. Total: {len(tools)}"
             )
 
-            # Se obtiene la herramienta de búsqueda de vuelos por su nombre
-            llm_with_tools = llm.bind_tools(tools, tool_choice="auto")
+            # Se enlaza las herramientas con el modelo de lenguaje, forzándolo
+            # a usar una
+            llm_with_tools = llm.bind_tools(tools, tool_choice="required")
 
             # Se construye el prompt de vuelos
             user_prompt = FlightPrompts.search_flights(state)
+            logger.info(
+                f"Buscando vuelos: {state.get('origin')} → "
+                f"{state.get('destination')} | {state.get('outbound_date')}"
+            )
 
             # Se invoca al modelo de lenguaje
             response = await llm_with_tools.ainvoke([
                 HumanMessage(content=user_prompt)
             ])
-            logger.info("Modelo invocado correctamente.")
 
             # Si la respuesta tiene el atributo tool_calls...
             if getattr(response, "tool_calls", None):
@@ -67,15 +73,25 @@ async def flight_agent(state: TravelState) -> TravelState:
                     # Se almacena el nombre de la herramienta
                     tool = next(t for t in tools if t.name == tool_call["name"])
 
-                    # Se invoca a la herramienta
-                    result = await tool.ainvoke(tool_call["args"])
+                    # Se invoca a la herramienta para obtener los resultados
+                    raw_result = await tool.ainvoke(tool_call["args"])
 
-                    # Se extiende la lista con los vuelos encontrados en forma
-                    # de diccionario
-                    flights.extend([
-                        flight.model_dump()
-                        for flight in result.flights
-                    ])
+                    # Si los resultados son una lista con longitud
+                    # mayor de cero, se selecciona el primer diccionario de
+                    # la lista
+                    if isinstance(raw_result, list) and len(raw_result) > 0:
+                        item = raw_result[0]
+
+                        # Si el diccionario tiene la clave 'text, se parsea
+                        # el string JSON que ha dado como respuesta
+                        if isinstance(item, dict) and "text" in item:
+                            text_content = item.get("text")
+                            parsed_data = json.loads(text_content)
+                            new_flights = parsed_data.get("flights", [])
+
+                    # Se extiende la lista de vuelos
+                    flights.extend(new_flights)
+                    logger.info(f"Se añadieron {len(new_flights)} vuelos.")
 
             # Se devuelve el estado con las opciones de vuelo
             return {
@@ -93,5 +109,5 @@ async def flight_agent(state: TravelState) -> TravelState:
     finally:
         logger.info(
             "Búsqueda de vuelos finalizada. Total de vuelos "
-            f"encontrados: {len(flights)}"
+            f"encontrados: {len(flights)}."
         )

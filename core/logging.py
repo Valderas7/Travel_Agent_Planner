@@ -22,3 +22,8 @@ def setup_logging():
     logger = logging.getLogger()
     logger.addHandler(log_handler)
     logger.setLevel(logging.INFO)
+
+    # Desactivar mensajes de logging de ciertos paquetes
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("mcp.server").setLevel(logging.WARNING)
+
