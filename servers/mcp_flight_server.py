@@ -103,7 +103,7 @@ async def mcp_search_flights(
 
         # Se realiza la solicitud 'GET' a SerpAPI para obtener los datos de vuelos
         response = await client.get(
-            "https://serpapi.com/search",
+            settings.SERPAPI_URL,
             params=search_params
         )
         response.raise_for_status()

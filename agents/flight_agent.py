@@ -2,6 +2,7 @@
 import logging
 import json
 from core.llm import llm
+from core.config import settings
 from langchain_core.messages import HumanMessage
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -34,7 +35,7 @@ async def flight_agent(state: TravelState) -> TravelState:
         mcp_client = MultiServerMCPClient({
             "flight-search": {
                 "transport": "streamable_http",
-                "url": "http://localhost:8000/mcp"
+                "url": settings.MCP_URL
             }
         })
 
