@@ -1,11 +1,11 @@
 # Librerías
 import logging
-import os
+from core.config import settings
 import httpx
 from contextlib import asynccontextmanager
 from fastmcp import Context, FastMCP
 from models.flight_models import FlightOption, FlightSearchResult
-from typing import AsyncIterator, Dict, Optional
+from typing import AsyncIterator, Optional
 
 # Se obtiene el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ async def mcp_search_flights(
         "outbound_date": outbound_date,
         "return_date": return_date,
         "currency": "EUR",
-        "api_key": os.getenv("SERPAPI_KEY"),
+        "api_key": settings.SERPAPI_KEY,
     }
 
     # Se intenta...
