@@ -20,6 +20,7 @@ class FlightOption(BaseModel):
     return_arrival_time: str
     return_flight_number: str
 
+
 class FlightSearchResult(BaseModel):
     """
     Clase que representa el resultado de la búsqueda de vuelos, conteniendo una
@@ -27,3 +28,12 @@ class FlightSearchResult(BaseModel):
     estado del viaje.
     """
     flights: List[FlightOption]
+
+
+class ChatRequest(BaseModel):
+    """
+    Clase que representa una consulta al modelo de lenguaje en modo chat,
+    con la representación del mensaje de la consulta y el estado
+    """
+    message: str
+    state: dict | None = None

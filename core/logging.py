@@ -6,6 +6,11 @@ from pythonjsonlogger import jsonlogger
 # Función para configurar el logging en formato JSON
 def setup_logging():
 
+    # Limpiamos todos los handlers existentes para evitar duplicados
+    root = logging.getLogger()
+    if root.handlers:
+        root.handlers.clear()
+
     # Crear un manejador de logs que envíe los logs a la consola (stdout)
     log_handler = logging.StreamHandler()
 
@@ -25,5 +30,6 @@ def setup_logging():
 
     # Desactivar mensajes de logging de ciertos paquetes
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("mcp.client").setLevel(logging.WARNING)
     logging.getLogger("mcp.server").setLevel(logging.WARNING)
 

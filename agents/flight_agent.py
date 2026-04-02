@@ -33,21 +33,19 @@ async def flight_agent(state: TravelState) -> TravelState:
 
         # Se crea un cliente con conexión al servidor MCP
         mcp_client = MultiServerMCPClient({
-            "flight-search": {
+            "travel-tools": {
                 "transport": "streamable_http",
                 "url": settings.MCP_URL
             }
         })
 
         # El cliente se conecta al servidor MCP e inicializa una sesión
-        async with mcp_client.session("flight-search") as session:
+        async with mcp_client.session("travel-tools") as session:
             await session.initialize()
 
             # Se cargan las herramientas disponibles en el servidor MCP
             tools = await load_mcp_tools(session)
-            logger.info(
-                f"Herramientas cargadas correctamente. Total: {len(tools)}"
-            )
+            logger.info(f"Herramientas cargadas correctamente: {len(tools)}.")
 
             # Se enlaza las herramientas con el modelo de lenguaje, forzándolo
             # a usar una
