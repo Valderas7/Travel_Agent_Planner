@@ -73,7 +73,7 @@ async def search_flights(
         # Se añade a la lista de vuelos todad la información de cada uno
         flights.append(
             FlightOption(
-                price=f'{price}€',
+                price=float(price),
                 outbound_airport=outbound.get("departure_airport", {}).get("name", "N/A"),
                 outbound_airline=outbound.get("airline", "Desconocida"),
                 outbound_departure_time=outbound.get("departure_airport", {}).get("time", "N/A"),

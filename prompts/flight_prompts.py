@@ -24,10 +24,11 @@ Primero identifica claramente:
 Luego convierte las ciudades a su código IATA de 3 letras.
 
 Ejemplos:
-- Madrid → MAD
-- Barcelona → BCN
-- Londres → LHR
-- Nueva York → JFK
+- Jerez de la Frontera -> XRY
+- Madrid -> MAD
+- Barcelona -> BCN
+- Londres -> LHR
+- Nueva York -> JFK
 
 Datos del usuario:
 - Origen: {state.origin}

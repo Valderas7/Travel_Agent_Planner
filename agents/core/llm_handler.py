@@ -1,12 +1,12 @@
 # Librerías
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
-from langchain_core.runnables import Runnable
-from typing import Callable, Sequence
+from langchain_core.runnables import RunnableBinding
+from typing import Callable
 from state import TravelState
 
 
 async def invoke_llm(
-    llm_with_tools: Runnable[Sequence, AIMessage],
+    llm_with_tools: RunnableBinding,
     user_message: str,
     state: TravelState,
     system_prompt_function: Callable
@@ -22,6 +22,8 @@ Args:
     usuario.
     state (TravelState): Estado actual del flujo de viaje, utilizado para
     construir el contexto del prompt.
+    system_prompt_function (Callable): Función que genera el prompt del
+    sistema a partir del estado.
 
 Returns:
     AIMessage: Respuesta del modelo de lenguaje. Puede contener:

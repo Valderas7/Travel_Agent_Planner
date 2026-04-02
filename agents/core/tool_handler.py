@@ -4,7 +4,7 @@ import json
 from langchain_core.messages import AIMessage
 from langchain_core.tools import StructuredTool
 from state import TravelState
-from typing import List
+from typing import Any, Dict, List
 
 # Logger del módulo
 logger = logging.getLogger(__name__)
@@ -14,9 +14,17 @@ async def process_tool_calls(
     response: AIMessage,
     tools: List[StructuredTool],
     state: TravelState
-) -> list:
+) -> List[Dict[str, Any]]:
     """
-    Procesa todas las llamadas a las herramientas del LLM.
+    Procesa todas las llamadas a herramientas realizadas por el LLM.
+
+    Args:
+        response: Respuesta del modelo de lenguaje (puede contener tool_calls).
+        tools: Lista de herramientas disponibles.
+        state: Estado actual del viaje (se actualizará con los resultados).
+
+    Returns:
+        Lista de resultados de las herramientas ejecutadas.
     """
     # Lista para recopilar resultados de herramientas
     tool_results = []
@@ -63,13 +71,19 @@ async def process_tool_calls(
 
 
 def _update_state_from_tool(
-    raw_result: list[dict],
+    raw_result: Any,
     state: TravelState,
-    tool_results: list,
+    tool_results: List[Dict[str, Any]],
     tool_name: str
 ) -> None:
     """
-    Actualiza el estado con los resultados de una herramienta.
+    Actualiza el estado del viaje con los resultados de una herramienta.
+
+    Args:
+        raw_result: Resultado crudo devuelto por la herramienta.
+        state: Estado del viaje a actualizar.
+        tool_results: Lista donde se registran los resultados de las tools.
+        tool_name: Nombre de la herramienta ejecutada.
     """
     # Se intenta...
     try:
@@ -96,12 +110,19 @@ def _update_state_from_tool(
 
         # Si hay nuevos vuelos...
         if new_flights:
+
+            # Se actualizado el estado del viaje con los vuelos
             state.flights = (state.flights or []) + new_flights
+
+            # Se añaden a la lista un diccionario con el nombre de la
+            # herramienta y la cantidad de vuelos encontrados
             tool_results.append({
                 "tool": tool_name,
                 "flights_found": len(new_flights)
             })
-            logger.info(f"Se añadieron {len(new_flights)} vuelos desde {tool_name}")
+            logger.info(
+                f"Se añadieron {len(new_flights)} vuelos desde '{tool_name}'."
+            )
 
     # Si hay excepción, se loggea
     except Exception as e:

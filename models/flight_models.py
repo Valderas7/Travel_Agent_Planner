@@ -8,7 +8,7 @@ class FlightOption(BaseModel):
     Clase que representa una opción de vuelo, incluyendo detalles como
     precio, aerolíneas, horas de despegue y llegada en la ida y la vuelta
     y números de vuelo."""
-    price: str
+    price: float
     outbound_airport: str
     outbound_airline: str
     outbound_departure_time: str
