@@ -30,11 +30,11 @@ Ejemplos:
 - Nueva York → JFK
 
 Datos del usuario:
-- Origen: {state.get('origin')}
-- Destino: {state.get('destination')}
-- Fecha de ida: {state.get('outbound_date')}
-- Fecha de vuelta: {state.get('return_date')}
-- Presupuesto máximo: {state.get('budget')} EUR
+- Origen: {state.origin}
+- Destino: {state.destination}
+- Fecha de ida: {state.outbound_date}
+- Fecha de vuelta: {state.return_date}
+- Presupuesto máximo: {state.budget} EUR
 
 Instrucciones:
 - Usa la herramienta `search_flights` si es necesario

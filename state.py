@@ -1,12 +1,12 @@
 # Librerías
-from typing_extensions import TypedDict
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
 
 
-class TravelState(TypedDict):
+class TravelState(BaseModel):
     """
-    Clase que representa el estado del viaje, incluyendo detalles como origen,
-    destino, fechas, presupuesto, opciones de vuelos, hoteles, actividades y
-    el itinerario generado.
+    Clase que representa el estado del viaje. Se usa BaseModel para permitir
+    campos dinámicos como 'flights', 'hotels', etc.
 
     Atributos:
         origin (str): Código IATA del aeropuerto de origen (ej: MAD)
@@ -15,13 +15,22 @@ class TravelState(TypedDict):
         return_date (Optional[str]): Fecha de regreso en formato YYYY-MM-DD
         (opcional)
         budget (float): Presupuesto máximo por persona para el viaje
-        adults (int): Número de adultos que viajan
-        flights (Optional[List[Dict[str, Any]]]): Lista de opciones de vuelos
-        encontradas, cada una representada como un diccionario con detalles
-        del vuelo
     """
-    origin: str                    
-    destination: str               
-    outbound_date: str             
-    return_date: str     
-    budget: float
+    origin: Optional[str] = None                   
+    destination: Optional[str] = None
+    outbound_date: Optional[str] = None
+    return_date: Optional[str] = None
+    budget: Optional[float] = None
+    flights: List[Dict[str, Any]] = Field(default_factory=list)
+    hotels: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# Función helper para crear estado desde dict
+def create_travel_state(current_state: dict | None = None) -> TravelState:
+    """
+    Función que transforma un diccionario del estado del viaje a uno de tipo
+    'TravelState'. Y si no hay estado, crea uno vacío
+    """
+    if current_state:
+        return TravelState(**current_state)
+    return TravelState()

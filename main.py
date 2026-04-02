@@ -1,5 +1,4 @@
 # Librerías
-import logging
 from api.routes import router
 from core.logging import setup_logging
 from fastapi import FastAPI
@@ -8,7 +7,7 @@ from server.mcp_server import mcp_app
 # Inicia el logger
 setup_logging()
 
-# Inicia la API
+# Inicia la API usando el lifespan del MCP
 app = FastAPI(
     title='Agente Planeador de Viajes',
     lifespan=mcp_app.lifespan
