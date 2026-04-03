@@ -26,6 +26,11 @@ async def process_tool_calls(
     Returns:
         Lista de resultados de las herramientas ejecutadas.
     """
+    # Diccionario para procesar cada herramienta
+    TOOL_HANDLERS = {
+        "search_flights": _apply_flight_results,
+    }
+
     # Lista para recopilar resultados de herramientas
     tool_results = []
 
@@ -52,6 +57,8 @@ async def process_tool_calls(
         if not tool:
             logger.warning(f"Herramienta no encontrada: {tool_name}")
             continue
+
+        # Mensaje de información
         logger.info(f"Ejecutando herramienta: '{tool_name}'.")
 
         # Se intenta...
@@ -60,7 +67,22 @@ async def process_tool_calls(
             # Invocar a la herramienta con los argumentos y actualizar el
             # estado
             raw_result = await tool.ainvoke(args)
-            _update_state_from_tool(raw_result, state, tool_results, tool_name)
+
+            # Se intenta normalizar la salida de cualquier herramienta MCP, ya
+            # sea diccionario, lista o lo que sea
+            data = _parse_tool_output(raw_result)
+
+            # Se busca la función que procesa la herramienta MCP en proceso
+            handler = TOOL_HANDLERS.get(tool_name)
+
+            # Si se ha encontrado la función, se ejecuta. Si no, se loggea
+            # advertencia
+            if handler:
+                handler(state, data, tool_results, args)
+            else:
+                logger.warning(
+                    f"No hay handler registrado para: {tool_name}."
+                )
 
         # Si hay excepción, se loggea
         except Exception:
@@ -70,60 +92,83 @@ async def process_tool_calls(
     return tool_results
 
 
-def _update_state_from_tool(
-    raw_result: Any,
-    state: TravelState,
-    tool_results: List[Dict[str, Any]],
-    tool_name: str
-) -> None:
+def _parse_tool_output(raw_result: Any) -> Dict:
     """
-    Actualiza el estado del viaje con los resultados de una herramienta.
-
-    Args:
-        raw_result: Resultado crudo devuelto por la herramienta.
-        state: Estado del viaje a actualizar.
-        tool_results: Lista donde se registran los resultados de las tools.
-        tool_name: Nombre de la herramienta ejecutada.
+    Normaliza la salida de cualquier herramienta MCP a un
+    diccionario estándar.
     """
     # Se intenta...
     try:
 
-        # Lista vacía para almacenar vuelos
-        new_flights = []
-
-        # Si el resultado crudo es un diccionario, se obtiene la clave
-        # 'flights' del mismo
+        # Si el resultado es directamente un diccionario, se devuelve
         if isinstance(raw_result, dict):
-            new_flights = raw_result.get("flights", [])
+            return raw_result
 
-        # Si por el contrario es una lista, se obtiene el primer miembro
-        # de la misma
+        # Si es una lista, se obtiene el primer miembro
         elif isinstance(raw_result, list) and raw_result:
             item = raw_result[0]
 
-            # Si este miembro es un diccionario y tiene la clave 'text',
-            # se obtiene su valor y se parsea a diccionario
+            # Si dicho miembro es un diccionario y la tiene la clave 'text',
+            # se devuelve dicha clave parseada como diccionario
             if isinstance(item, dict) and "text" in item:
-                text_content = item.get("text", "{}")
-                parsed = json.loads(text_content)
-                new_flights = parsed.get("flights", [])
+                return json.loads(item["text"])
 
-        # Si hay nuevos vuelos...
-        if new_flights:
+        # Si por el contrario es un string, se convierte a diccionario y se
+        # devuelve
+        elif isinstance(raw_result, str):
+            return json.loads(raw_result)
 
-            # Se actualizado el estado del viaje con los vuelos
-            state.flights = (state.flights or []) + new_flights
+    # Si hay excepción, se devuelve un diccionario
+    except Exception:
+        logger.exception(
+            "Error al normalizar la respuesta de la herramienta MCP."
+        )
+        return {}
 
-            # Se añaden a la lista un diccionario con el nombre de la
-            # herramienta y la cantidad de vuelos encontrados
-            tool_results.append({
-                "tool": tool_name,
-                "flights_found": len(new_flights)
-            })
-            logger.info(
-                f"Se añadieron {len(new_flights)} vuelos desde '{tool_name}'."
-            )
+    # Se devuelve diccionario
+    return {}
 
-    # Si hay excepción, se loggea
-    except Exception as e:
-        logger.warning(f"No se pudo parsear resultado de {tool_name}: {e}.")
+
+def _apply_flight_results(
+    state: TravelState,
+    data: Dict,
+    tool_results: List[Dict],
+    args
+) -> None:
+    """
+    Aplica resultados de vuelos al estado.
+    """
+    # Se obtienen los vuelos
+    flights = data.get("flights", [])
+
+    # Si no hy, no se devuelve nada
+    if not flights:
+        return
+    
+    # Si los vuelos del estado están vacíos se crea una lista vacía
+    if state.flights is None:
+        state.flights = []
+
+    # Se extiende los vuelos del estado con los vuelos descubiertos por la
+    # herramienta
+    state.flights.extend(flights)
+
+    # Se añade un diccionario a la lista de resultados de herramientas
+    # indicando los vuelos que se han encontrado para dicha herramienta
+    tool_results.append({
+        "tool": "search_flights",
+        "flights_found": len(flights)
+    })
+
+    # Si en los argumentos hay valores no nulos para el origen, el destino,
+    # las fechas y el presupuesto, se modifica el estado
+    if args.get("origin"):
+        state.origin = args["origin"]
+    if args.get("destination"):
+        state.destination = args["destination"]
+    if args.get("outbound_date"):
+        state.outbound_date = args["outbound_date"]
+    if args.get("return_date"):
+        state.return_date = args["return_date"]
+    if args.get("budget"):
+        state.budget = args["budget"]
