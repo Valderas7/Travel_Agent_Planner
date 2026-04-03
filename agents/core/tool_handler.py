@@ -100,12 +100,16 @@ def _parse_tool_output(raw_result: Any) -> Dict:
     # Se intenta...
     try:
 
+        # Si el resultado tiene atributo para convertir a diccionario, se usa
+        if hasattr(raw_result, "model_dump"):
+            return raw_result.model_dump()
+
         # Si el resultado es directamente un diccionario, se devuelve
         if isinstance(raw_result, dict):
             return raw_result
 
         # Si es una lista, se obtiene el primer miembro
-        elif isinstance(raw_result, list) and raw_result:
+        if isinstance(raw_result, list) and raw_result:
             item = raw_result[0]
 
             # Si dicho miembro es un diccionario y la tiene la clave 'text',
@@ -115,7 +119,7 @@ def _parse_tool_output(raw_result: Any) -> Dict:
 
         # Si por el contrario es un string, se convierte a diccionario y se
         # devuelve
-        elif isinstance(raw_result, str):
+        if isinstance(raw_result, str):
             return json.loads(raw_result)
 
     # Si hay excepción, se devuelve un diccionario
@@ -144,7 +148,7 @@ def _apply_flight_results(
     if not flights:
         return
     
-    # Si los vuelos del estado están vacíos se crea una lista vacía
+    # Inicializar los vuelos del estado si es necesario
     if state.flights is None:
         state.flights = []
 
@@ -159,15 +163,28 @@ def _apply_flight_results(
         "flights_found": len(flights)
     })
 
-    # Si en los argumentos hay valores no nulos para el origen, el destino,
-    # las fechas y el presupuesto, se modifica el estado
-    if args.get("origin"):
-        state.origin = args["origin"]
-    if args.get("destination"):
-        state.destination = args["destination"]
-    if args.get("outbound_date"):
-        state.outbound_date = args["outbound_date"]
-    if args.get("return_date"):
-        state.return_date = args["return_date"]
-    if args.get("budget"):
-        state.budget = args["budget"]
+    # Se modifica el estado desde datos reales (NO args) eligiendo el primer
+    # vuelo completo
+    first_flight = flights[0]
+
+    # Dentro de ese vuelo, se elige el de ida
+    outbound = first_flight.get("outbound_flight")
+
+    # Si existe, se actualiza el estado
+    if outbound:
+        if outbound.get("departure_airport_code"):
+            state.origin = outbound["departure_airport_code"]
+
+        if outbound.get("arrival_airport_code"):
+            state.destination = outbound["arrival_airport_code"]
+
+        if outbound.get("departure_time"):
+            state.outbound_date = outbound["departure_time"].split(" ")[0]
+    
+    # Dentro del primer vuelo, se elige el vuelo de vuelta
+    return_flight = first_flight.get("return_flight")
+
+    # Si existe, se actualiza el estado
+    if return_flight and return_flight.get("departure_time"):
+        state.return_date = return_flight["departure_time"].split(" ")[0]
+
