@@ -2,13 +2,13 @@
 from agents import travel_agent
 from agents.travel_agent import travel_agent
 from fastapi import APIRouter
-from models.flight_models import ChatRequest
+from models.chat_models import ChatRequest
 
 # Enrutador de FastAPI
 router = APIRouter()
 
 
-@router.post("/chat", tags=['Vuelos'])
+@router.post("/chat", tags=['Asistente Conversacional'])
 async def chat_endpoint(request: ChatRequest):
     """
     Endpoint conversacional principal.

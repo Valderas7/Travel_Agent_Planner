@@ -78,7 +78,7 @@ async def process_tool_calls(
             # Si se ha encontrado la función, se ejecuta. Si no, se loggea
             # advertencia
             if handler:
-                handler(state, data, tool_results, args)
+                handler(state, data, tool_results)
             else:
                 logger.warning(
                     f"No hay handler registrado para: {tool_name}."
@@ -133,7 +133,6 @@ def _apply_flight_results(
     state: TravelState,
     data: Dict,
     tool_results: List[Dict],
-    args
 ) -> None:
     """
     Aplica resultados de vuelos al estado.

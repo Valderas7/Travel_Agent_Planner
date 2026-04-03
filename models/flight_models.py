@@ -1,39 +1,38 @@
 # Librerías
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
+
+
+class FlightLeg(BaseModel):
+    """
+    Modelo que representa un vuelo individual (ida o vuelta), incluyendo
+    detalles como códigos de aeropuertos y nombres, tiempos de salida y
+    llegada, aerolíneas, números de vuelos, duración del vuelo y avión
+    """
+    departure_airport_code: str      
+    departure_airport_name: str
+    departure_time: str              
+    arrival_airport_code: str
+    arrival_airport_name: str
+    arrival_time: str
+    airline: str
+    flight_number: str
+    duration_minutes: Optional[int] = None
+    airplane: Optional[str] = None
 
 
 class FlightOption(BaseModel):
     """
-    Clase que representa una opción de vuelo, incluyendo detalles como
-    precio, aerolíneas, horas de despegue y llegada en la ida y la vuelta
-    y números de vuelo."""
+    Modelo que representa una opción completa de vuelo (ida + vuelta).
+    """
+    outbound_flight: FlightLeg
+    return_flight: Optional[FlightLeg] = None
     price: float
-    outbound_airport: str
-    outbound_airline: str
-    outbound_departure_time: str
-    outbound_arrival_time: str
-    outbound_flight_number: str
-    return_airport: str
-    return_airline: str
-    return_departure_time: str
-    return_arrival_time: str
-    return_flight_number: str
 
 
 class FlightSearchResult(BaseModel):
     """
-    Clase que representa el resultado de la búsqueda de vuelos, conteniendo una
-    lista de opciones de vuelo que cumplen con los criterios especificados en el
-    estado del viaje.
+    Modelo que representa una lista de opciones completas de vuelos (ida +
+    vuelta).
     """
     flights: List[FlightOption]
-
-
-class ChatRequest(BaseModel):
-    """
-    Clase que representa una consulta al modelo de lenguaje en modo chat,
-    con la representación del mensaje de la consulta y el estado
-    """
-    message: str
-    state: dict | None = None
