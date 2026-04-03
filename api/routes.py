@@ -1,6 +1,5 @@
 # Librerías
-from agents import travel_agent
-from agents.travel_agent import travel_agent
+from agent.entrypoint import travel_agent
 from fastapi import APIRouter
 from models.chat_models import ChatRequest
 
@@ -16,6 +15,5 @@ async def chat_endpoint(request: ChatRequest):
     """
     result = await travel_agent(
         user_message=request.message,
-        current_state=request.state
     )
     return result
