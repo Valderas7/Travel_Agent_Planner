@@ -1,10 +1,10 @@
 # Librerías
-from agent.state import GraphState
-from langchain_core.messages import SystemMessage, HumanMessage
 from core.llm import llm
+from langchain_core.messages import SystemMessage, HumanMessage
+from typing import Any, Dict
 
 
-async def response_node(state: GraphState):
+async def response_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # Si no se han encontrado vuelos en el estado, se devuelve éste y una
     #respuesta indicando que no se han encontrado vuelos

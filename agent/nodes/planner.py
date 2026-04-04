@@ -1,8 +1,12 @@
 # Librerías
+import logging
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.runnables import RunnableBinding
 from prompts.flight_prompts import FlightPrompts
 from typing import Dict, Any
+
+# Logger del módulo
+logger = logging.getLogger(__name__)
 
 
 async def planner_node(
@@ -41,10 +45,27 @@ async def planner_node(
         HumanMessage(content=state["user_message"])
     ]
 
+    # Si el estado tiene 'tool_results', se añade a la lista de mensajes
+    if state.get("tool_results"):
+        messages.append(
+            HumanMessage(
+                content=f"Resultados de herramientas: {state['tool_results']}"
+            )
+        )
+
     # Se invoca al LLM con herramientas
     response = await llm_with_tools.ainvoke(messages)
 
-    # Se devuelve el estado, los mensajes y las llamadas a herramientas
+    # Se comprueba si el LLM incluye en su respuesta un atributo para llamadas
+    # a herramientas
+    tool_calls = getattr(response, "tool_calls", None)
+
+    # Si las incluye, se loggea
+    if tool_calls:
+        logger.info(f"El modelo solicita {len(tool_calls)} herramienta/s.")
+
+    # Se devuelve el estado actualizado con los mensajes y las llamadas a
+    # herramientas
     return {
         **state,
         "messages": state.get("messages", []) + [response],
