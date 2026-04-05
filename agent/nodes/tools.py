@@ -48,6 +48,7 @@ async def tool_node(
         # Se intenta normalizar la salida de cualquier herramienta MCP, ya
         # sea diccionario, lista o lo que sea
         data = parse_tool_output(raw)
+        logger.info("Obtenido resultado de la herramienta MCP.")
 
         # Se añade a la lista de resultados el nombre de la herramienta y el
         # resultado tras llamarla
@@ -66,11 +67,9 @@ async def tool_node(
         )
 
     # Se devuelve un diccionario con el estado actualizado con los resultados
-    # de las herramientas, además de limpiar las llamadas a herramientas, ya
-    # que ya se han realizado en este punto
+    # de las herramientas
     return {
         **state,
         "messages": state.get("messages", []) + tool_messages,
-        "tool_calls": None,
         "tool_results": tool_results
     }

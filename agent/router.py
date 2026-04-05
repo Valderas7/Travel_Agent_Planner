@@ -4,10 +4,8 @@ from typing import Any, Dict
 
 def should_call_tools(state: Dict[str, Any]) -> bool:
     """
-    Determina si el agente debe ejecutar herramientas (tools).
-
-    Se basa en si el LLM ha generado llamadas a herramientas (`tool_calls`)
-    en el último paso del planner.
+    Determina si el agente debe ejecutar herramientas (tools) basándose en
+    el último mensaje intercambiado con el modelo de lenguaje.
 
     Args:
         state (Dict[str, Any]): Estado actual del grafo.
@@ -16,32 +14,16 @@ def should_call_tools(state: Dict[str, Any]) -> bool:
         bool: True si hay tool calls pendientes de ejecutar,
         False en caso contrario.
     """
-    # Si el estado tiene llamadas a herramientas pendientes, se devuelve True
-    if state.get("tool_calls"):
-        return True
+    # Se obtienen los mensajes intercambiados con el modelo del grafo
+    messages = state.get("messages", [])
 
-    # Se obtiene el estado de los viajes
-    travel_state = state.get("travel_state")
-
-    # Si ya hay vuelos, se devuelve False
-    if travel_state and travel_state.flights:
+    # Si no hay, se retorna False
+    if not messages:
         return False
 
-    # En cualquier otro caso se devuelve False
-    return False
+    # Se obtiene el último mensaje
+    last_msg = messages[-1]
 
-
-def should_finish(state: Dict[str, Any]) -> bool:
-    """
-    Determina si el flujo del agente puede finalizar.
-
-    Se considera que el agente puede terminar cuando ya hay resultados
-    suficientes en el estado (por ejemplo, vuelos encontrados).
-
-    Args:
-        state (Dict[str, Any]): Estado actual del grafo.
-
-    Returns:
-        bool: True si el agente debe finalizar, False en caso contrario.
-    """
-    return state.get("flights") is not None
+    # Se devuelve un booleano indicando si el último mensaje tiene el
+    # atributo de llamadas a herramientas
+    return bool(getattr(last_msg, "tool_calls", None))

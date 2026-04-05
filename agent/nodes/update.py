@@ -1,6 +1,10 @@
 # Librerías
+import logging
 from agent.registry import TOOL_MAPPERS
 from typing import Any, Dict
+
+# Se obtiene el logger del módulo
+logger = logging.getLogger(__name__)
 
 
 def update_node(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -26,6 +30,9 @@ def update_node(state: Dict[str, Any]) -> Dict[str, Any]:
             handler(state, result.get("data", {}))
 
     # Se devuelve el grafo actualizado
+    logger.info(
+        "Grafo actualizado con la información obtenida en las herramientas."
+    )
     return state
 
     

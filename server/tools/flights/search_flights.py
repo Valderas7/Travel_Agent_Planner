@@ -57,7 +57,7 @@ async def search_flights(
     )
 
     # Para cada grupo de ida...
-    for flight_group in flight_groups[:10]:
+    for flight_group in flight_groups[:5]:
 
         # Se obtiene el token de salida y el precio
         departure_token = flight_group.get("departure_token")

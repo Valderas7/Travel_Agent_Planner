@@ -74,7 +74,6 @@ async def travel_agent(user_message: str) -> Dict[str, Any]:
         return {
             "response": final_state["response"],
             "flights": final_state["travel_state"].flights,
-            "state": final_state,
             "tool_results": final_state["tool_results"]
         }
     

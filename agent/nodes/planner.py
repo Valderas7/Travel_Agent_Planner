@@ -42,13 +42,18 @@ async def planner_node(
     # Se obtienen los mensajes intercambiados con el modelo de lenguaje
     messages = state.get("messages", [])
 
-    # Si no hay mensajes, se crean con el prompt de sistema y el mensaje de
-    # usuario
+    # Si no hay mensajes intercambiados con el modelo ya, se crea el mensaje
+    # de sistema y el humano para los vuelos
     if not messages:
         messages = [
             SystemMessage(content=FlightPrompts.search_flights(travel_state)),
             HumanMessage(content=state["user_message"])
         ]
+
+    # Si en cambio ya hay mensajes intercambiados, se añade el mensaje del
+    # usuario a la lista de mensajes
+    else:
+        messages.append(HumanMessage(content=state["user_message"]))
 
     # Se invoca al LLM con herramientas
     response = await llm_with_tools.ainvoke(messages)
@@ -57,7 +62,7 @@ async def planner_node(
     # a herramientas
     tool_calls = getattr(response, "tool_calls", None)
 
-    # Si las incluye, se loggea
+    # Si su valor no es algo vacío, se loggea
     if tool_calls:
         logger.info(f"El modelo solicita {len(tool_calls)} herramienta/s.")
 
@@ -70,5 +75,4 @@ async def planner_node(
     return {
         **state,
         "messages": messages,
-        "tool_calls": tool_calls
     }

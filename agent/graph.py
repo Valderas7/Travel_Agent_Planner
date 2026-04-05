@@ -83,8 +83,8 @@ def build_graph(
     # Después del nodo 'tools' se pasa al nodo 'update'
     graph.add_edge("tools", "update")
 
-    # Despues del nodo 'update' se pasa al nodo 'planner'
-    graph.add_edge("update", "planner")
+    # Después de nodo 'update' se pasa al nodo 'response'
+    graph.add_edge("update", "response")
 
     # Después del nodo 'response', se termina el grafo
     graph.add_edge("response", END)

@@ -21,17 +21,12 @@ class GraphState(TypedDict):
                 - AIMessage (respuestas del modelo)
                 - ToolMessage (resultados de herramientas)
             Este historial permite al modelo razonar de forma iterativa.
-        tool_calls (Any): Llamadas a herramientas solicitadas por el LLM en
-            el último paso. Se utiliza para enrutar la ejecución hacia el nodo
-            de herramientas.
         tool_results (List[Dict[str, Any]]): Resultados estructurados devueltos
-            por las herramientas ejecutadas. Se utilizan en el nodo de
-            actualización para modificar el estado del viaje.
+            por las herramientas ejecutadas.
         response (str): Respuesta final generada para el usuario.
     """
     user_message: str
     travel_state: TravelState
     messages: List
-    tool_calls: Any
     tool_results: List[Dict[str, Any]]
     response: str
