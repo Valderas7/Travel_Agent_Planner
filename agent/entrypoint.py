@@ -1,20 +1,17 @@
 # Librerías
 import logging
-import json
-from agent.graph import build_graph
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_mcp_adapters.tools import load_mcp_tools
-from core.llm import llm
-from langchain_core.messages import AIMessage
-from langchain_core.tools import StructuredTool
+from agent.runtime.graph_runtime import get_graph
 from state import create_travel_state
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 # Se obtiene logger del módulo
 logger = logging.getLogger(__name__)
 
 
-async def travel_agent(user_message: str) -> Dict[str, Any]:
+async def travel_agent(
+    user_message: str,
+    thread_id: str
+) -> Dict[str, Any]:
     """
     Agente principal de planificación de viajes basado en LangGraph + MCP.
 
@@ -26,6 +23,8 @@ async def travel_agent(user_message: str) -> Dict[str, Any]:
 
     Args:
         user_message (str): Mensaje del usuario en lenguaje natural.
+        thread_id (str): Identificador único que se utiliza para gestionar la
+            memoria y el contexto de una conversación
 
     Returns:
         Dict[str, Any]: Resultado final del agente con:
@@ -34,46 +33,33 @@ async def travel_agent(user_message: str) -> Dict[str, Any]:
             - state: Estado completo del grafo
             - tool_results: Resultados de herramientas ejecutadas
     """
-    # Se crea un diccionario con la consulta del usuario
+    # Se construye el grafo de ejecución
+    graph = await get_graph()
+
+    # Se crea un grafo de estado inicial con la consulta del usuario
     state = {
         "user_message": user_message,
         "messages": [],
         "travel_state": create_travel_state(None),
-        "tool_calls": None,
         "tool_results": [],
         "response": ""
     }
 
-    # Se crea un cliente MCP con una sesión para conectar al servidor MCP
-    async with MultiServerMCPClient({
-        "travel-tools": {
-            "transport": "streamable_http",
-            "url": "http://localhost:8000/mcp"
+    # Se ejecuta el grafo pasando un identificador de memoria
+    final_state = await graph.ainvoke(
+        input=state,
+        config={
+            "configurable": {
+                "thread_id": thread_id
+            }
         }
-    }).session("travel-tools") as session:
+    )
 
-        # Se inicializa la sesión
-        await session.initialize()
-
-        # Se cargan las herramientas MCP del servidor
-        tools = await load_mcp_tools(session)
-
-        # Se enlaza el modelo de lenguaje con las herramientas MCP
-        llm_with_tools = llm.bind_tools(tools, tool_choice="auto")
-        
-        # Se construye el grafo de ejecución
-        graph = build_graph(
-            llm_with_tools=llm_with_tools,
-            tools=tools,
-        )
-
-        # Se ejecuta el grafo
-        final_state = await graph.ainvoke(state)
-
-        # Se devuelve un diccionario
-        return {
-            "response": final_state["response"],
-            "flights": final_state["travel_state"].flights,
-            "tool_results": final_state["tool_results"]
-        }
+    # Se devuelve un diccionario con la respuesta, los vuelos y los resultados
+    # de las herramientas
+    return {
+        "response": final_state["response"],
+        "flights": final_state["travel_state"].flights,
+        "tool_results": final_state["tool_results"]
+    }
     

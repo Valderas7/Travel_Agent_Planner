@@ -4,6 +4,7 @@ from agent.nodes.tools import tool_node
 from agent.nodes.response import response_node
 from agent.nodes.update import update_node
 from agent.router import should_call_tools
+from agent.runtime.checkpointer import checkpointer
 from agent.state import GraphState
 from functools import partial
 from langgraph.graph import StateGraph, END
@@ -89,5 +90,5 @@ def build_graph(
     # Después del nodo 'response', se termina el grafo
     graph.add_edge("response", END)
 
-    # Se compila el grafo y se devuelve
-    return graph.compile()
+    # Se compila el grafo con la memoria a corto plazo importada
+    return graph.compile(checkpointer=checkpointer)
