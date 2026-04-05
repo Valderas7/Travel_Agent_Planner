@@ -81,7 +81,6 @@ async def search_flights(
             "return_date": return_date,
             "departure_token": departure_token,
             "currency": "EUR",
-            "deep_search": "true",
             "api_key": settings.SERPAPI_KEY
         }
 
