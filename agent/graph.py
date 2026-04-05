@@ -25,7 +25,6 @@ def build_graph(
             - Decide si necesita tools
         2. tools_node:
             - Ejecuta herramientas MCP
-            - Genera observations
         3. update_node:
             - Actualiza estado del viaje
         4. response_node:
@@ -81,9 +80,10 @@ def build_graph(
         }
     )
 
-    # Después del nodo 'tools' se pasa al nodo 'update', y posteriormente
-    # al nodo 'planner'
+    # Después del nodo 'tools' se pasa al nodo 'update'
     graph.add_edge("tools", "update")
+
+    # Despues del nodo 'update' se pasa al nodo 'planner'
     graph.add_edge("update", "planner")
 
     # Después del nodo 'response', se termina el grafo
