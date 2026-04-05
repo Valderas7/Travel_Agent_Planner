@@ -56,7 +56,7 @@ async def response_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # Se construye el contexto final añadiendo los mensajes intercambiados
     # anteriormente con el modelo
-    final_messages = messages + [system_prompt]
+    final_messages = [system_prompt] + messages
 
     # Se invoca al modelo con el mensaje de sistema y de usuario
     result = await llm.ainvoke(final_messages)

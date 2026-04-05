@@ -39,7 +39,7 @@ async def travel_agent(
     # Se crea un grafo de estado inicial con la consulta del usuario
     state = {
         "user_message": user_message,
-        "messages": [],
+        "messages": None,
         "travel_state": create_travel_state(None),
         "tool_results": [],
         "response": ""

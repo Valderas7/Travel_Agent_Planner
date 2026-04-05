@@ -40,20 +40,26 @@ async def planner_node(
     travel_state = state.get("travel_state")
 
     # Se obtienen los mensajes intercambiados con el modelo de lenguaje
-    messages = state.get("messages", [])
+    messages = state.get("messages") or []
 
-    # Si no hay mensajes intercambiados con el modelo ya, se crea el mensaje
-    # de sistema y el humano para los vuelos
-    if not messages:
+    # Si no hay mensajes aún, se forma el prompt de sistema y se almacena
+    # la consulta del usuario
+    if len(messages) == 0:
         messages = [
             SystemMessage(content=FlightPrompts.search_flights(travel_state)),
             HumanMessage(content=state["user_message"])
         ]
-
-    # Si en cambio ya hay mensajes intercambiados, se añade el mensaje del
-    # usuario a la lista de mensajes
+    
+    # Si no...
     else:
-        messages.append(HumanMessage(content=state["user_message"]))
+        
+        #  Se obtiene el último mensaje de la lista de mensajes
+        last = messages[-1]
+
+        # Si el último mensaje no es humano, se añade a la laista de mensajes
+        # la consulta del usuario
+        if not isinstance(messages[-1], HumanMessage) and last.content == state["user_message"]:
+            messages = messages + [HumanMessage(content=state["user_message"])]
 
     # Se invoca al LLM con herramientas
     response = await llm_with_tools.ainvoke(messages)
