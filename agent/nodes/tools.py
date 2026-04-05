@@ -1,6 +1,8 @@
 # Librerías
 import logging
+import json
 from core.utils import parse_tool_output
+from langchain_core.messages import ToolMessage
 from typing import Any, Dict, List
 
 # Se obtiene el logger del módulo
@@ -23,10 +25,11 @@ async def tool_node(
     Returns:
         Dict[str, Any]: Grafo actualizado
     """
-    # Se obtiene el último 'AIMessage' (respuesta del modelo) del estado
+    # Se obtiene el último (respuesta del modelo) del estado
     response = state["messages"][-1]
 
-    # Lista para recopilar resultados de herramientas
+    # Lista para recopilar mensajes y resultados de herramientas
+    tool_messages = []
     tool_results = []
 
     # Para cada llamada a herramienta dentro de la respuesta...
@@ -46,18 +49,28 @@ async def tool_node(
         # sea diccionario, lista o lo que sea
         data = parse_tool_output(raw)
 
-        # Se añade a la lista de herramientas el nombre de la misma y el
+        # Se añade a la lista de resultados el nombre de la herramienta y el
         # resultado tras llamarla
         tool_results.append({
             "tool": tool_call["name"],
             "data": data
         })
 
+        # Se añade a la lista de mensajes de herramientas el resultado tras
+        # llamarla y el ID de la llamada
+        tool_messages.append(
+            ToolMessage(
+                content=json.dumps(data, ensure_ascii=False),
+                tool_call_id=tool_call["id"]
+            )
+        )
+
     # Se devuelve un diccionario con el estado actualizado con los resultados
     # de las herramientas, además de limpiar las llamadas a herramientas, ya
     # que ya se han realizado en este punto
     return {
         **state,
+        "messages": state.get("messages", []) + tool_messages,
         "tool_calls": None,
         "tool_results": tool_results
     }

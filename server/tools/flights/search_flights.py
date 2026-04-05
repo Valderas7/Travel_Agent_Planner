@@ -36,7 +36,6 @@ async def search_flights(
         "outbound_date": outbound_date,
         "return_date": return_date,
         "currency": "EUR",
-        "deep_search": "true",
         "api_key": settings.SERPAPI_KEY
     }
 

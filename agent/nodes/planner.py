@@ -39,19 +39,16 @@ async def planner_node(
     # Se obtiene el estado del viaje a partir del estado del grafo
     travel_state = state.get("travel_state")
 
-    # Lista de mensajes
-    messages = [
-        SystemMessage(content=FlightPrompts.search_flights(travel_state)),
-        HumanMessage(content=state["user_message"])
-    ]
+    # Se obtienen los mensajes intercambiados con el modelo de lenguaje
+    messages = state.get("messages", [])
 
-    # Si el estado tiene 'tool_results', se añade a la lista de mensajes
-    if state.get("tool_results"):
-        messages.append(
-            HumanMessage(
-                content=f"Resultados de herramientas: {state['tool_results']}"
-            )
-        )
+    # Si no hay mensajes, se crean con el prompt de sistema y el mensaje de
+    # usuario
+    if not messages:
+        messages = [
+            SystemMessage(content=FlightPrompts.search_flights(travel_state)),
+            HumanMessage(content=state["user_message"])
+        ]
 
     # Se invoca al LLM con herramientas
     response = await llm_with_tools.ainvoke(messages)
@@ -64,10 +61,14 @@ async def planner_node(
     if tool_calls:
         logger.info(f"El modelo solicita {len(tool_calls)} herramienta/s.")
 
-    # Se devuelve el estado actualizado con los mensajes y las llamadas a
-    # herramientas
+    # Se actualizan los mensajes con la respuesta dada por el modelo de
+    # lenguaje
+    messages = messages + [response]
+
+    # Se devuelve el estado actualizado con los mensajes intercambiados con el
+    # modelo y las llamadas a herramientas MCP solicitadas por el modelo
     return {
         **state,
-        "messages": state.get("messages", []) + [response],
-        "tool_calls": getattr(response, "tool_calls", None)
+        "messages": messages,
+        "tool_calls": tool_calls
     }
